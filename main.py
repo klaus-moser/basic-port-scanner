@@ -13,13 +13,12 @@
 
 """ Basic port scanner. """
 
-
 import sys
 import time
 import os
 import socket
-import logging
 
+from argparse import ArgumentParser
 from datetime import datetime
 from tqdm import tqdm
 
@@ -46,7 +45,7 @@ def print_logo() -> None:
         print("(logo?)")
 
 
-def port_scanner(target: str) -> None:
+def port_scanner(target: str, start_port: int = 50, end_port: int = 85) -> None:
     """
     Base function of the port scanner.
 
@@ -62,8 +61,8 @@ def port_scanner(target: str) -> None:
     try:
         results = list()
 
-        for port in tqdm(range(50, 85), "Scanning..."):
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        for port in tqdm(range(start_port, end_port), "Scanning..."):
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # gather IP and PORT from socket
             socket.setdefaulttimeout(1)
             result = s.connect_ex((target, port))  # returns error indicator - port=open throws a 0, otherwise 1
 
@@ -92,11 +91,18 @@ def port_scanner(target: str) -> None:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 2:  # Define our target
-        ip = socket.gethostbyname(sys.argv[1])  # Translate hostname to IPv4
-    else:
-        print("Invalid amount of arguments.")
-        print("Syntax: python3 scanner.py")
+    parser = ArgumentParser()  # setup parser
+    parser.add_argument("target", type=str, help="Target to scan.")
+    parser.add_argument("--start_port", type=int, choices=range(1, 65535), default=50, help="Port from where to start.")
+    parser.add_argument("--end_port", type=int, choices=range(1, 65535), default=85, help="Port where to end.")
+    args = parser.parse_args()  # parse arguments
+
+    ip = socket.gethostbyname(args.target)  # translate hostname to IPv4
+    start_port = args.start_port
+    end_port = args.end_port
+
+    if end_port < start_port:
+        print("End port must be bigger or equal start port.")
         sys.exit()
 
-    port_scanner(target=ip)
+    port_scanner(target=ip, start_port=start_port, end_port=end_port)
